@@ -1,0 +1,29 @@
+{
+  "name": "bumblebot",
+  "version": "1.0.0",
+  "description": "bumble's discord bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BumbleTrixx/bumblebot.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "bumbletrixx"
+  ],
+  "author": "BumbleTrixx",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BumbleTrixx/bumblebot/issues"
+  },
+  "homepage": "https://github.com/BumbleTrixx/bumblebot#readme",
+  "dependencies": {
+    "@discordjs/rest": "^0.2.0-canary.0",
+    "discord-api-types": "^0.26.1",
+    "discord.js": "^13.5.0"
+  }
+}
