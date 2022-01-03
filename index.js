@@ -1,4 +1,4 @@
-import secret from '~/discord/bumblebot/secret.json';
+require('dotenv').config();
 
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
@@ -6,17 +6,16 @@ const { Routes } = require('discord-api-types/v9');
 const { Client, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
-const commands = [
-    { name: 'bcounter', description: 'Bumble\'s counting Bot!' }
-]; 
+const commands = [ { name: 'bcounter', description: 'Bumble\'s counting Bot!' } ];
+const groups = [ {name: 'Bumble\'s Humble Hive', id: 692768770581856366 } ];
 
-const rest = new REST({ version: '9' }).setToken(secret.discord.TOKEN);
+const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
 
-        await rest.put( Routes.applicationGuildCommands(secret.discord.CLIENT_ID, secret.discord.groups.bumbles_humble_hive), { body: commands }, );
+        await rest.put( Routes.applicationCommands(process.env.CLIENT_ID, { body: commands }, ));
 
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
@@ -36,4 +35,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-client.login(secret.discord.TOKEN);
+client.login(process.env.TOKEN);
