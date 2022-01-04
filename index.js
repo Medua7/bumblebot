@@ -1,24 +1,41 @@
-import dotenv from 'dotenv'
-dotenv.config();
+require('dotenv').config();
 
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
+const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
 
-const { Client, Intents } = require('discord.js');
+const { Client, Intents, Guild } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
-const commands = [ { name: 'bcounter', description: 'Bumble\'s counting Bot!' } ];
-const groups = [ {name: 'Bumble\'s Humble Hive', id: 692768770581856366 } ];
-
-const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
+const groups = [ {name: 'Bumble\'s Humble Hive', id: '692768770581856366' } ]; //string -> id = Snowflake
+const commands = [ {name: 'bcounter', description: 'Bumble 23213123!'} ];
 
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
 
-        await rest.put( Routes.applicationCommands(process.env.CLIENT_ID, { body: commands }, ));
+        let CommandManager = Routes.applicationCommands(process.env.CLIENT_ID);
+        console.log(CommandManager);
+
+        //REMOVE ALL (/) COMMANDS
+        await rest.get(CommandManager).then(data => {
+            const promises = [];
+            for (const command of data) {
+                const deleteUrl = `${CommandManager}/${command.id}`;
+                promises.push(rest.delete(deleteUrl));
+            }
+            return Promise.all(promises);
+        });
+        
+        //ADD ALL (/) COMMANDS
+        await rest.put(
+            CommandManager,
+            { body: commands },
+        );
 
         console.log('Successfully reloaded application (/) commands.');
+        
+        client.login(process.env.TOKEN);
     } catch (error) {
         console.error(error);
     }
@@ -35,5 +52,3 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply('Lets kill this b****!');
     }
 });
-
-client.login(process.env.TOKEN);
