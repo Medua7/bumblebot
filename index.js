@@ -84,9 +84,6 @@ client.on('ready', () => {
     groups.forEach(group => {
         client.channels.cache.get(group.counting).send(MESSAGE_INIT);
     });
-
-    //TODO: load current counting number
-    //TODO: delete all message until
 });
 
 client.on('messageCreate', async message => {
@@ -130,7 +127,7 @@ client.on('messageCreate', async message => {
         const args = message.content.split(' ');
         let approve = false;
         if(args.length > 0){
-            if(counting != '' && (counting.last != message.author.id || 1 == 1)){
+            if(counting != '' && (counting.last != message.author.id)){
                 if(!isNaN(args[0]) && (parseInt(args[0]) == (1+counting.current))){
                     approve = true;
                 }
