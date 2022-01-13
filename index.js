@@ -1,16 +1,47 @@
 require('dotenv').config();
 
-const { REST } = require('@discordjs/rest');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { REST, RequestManager } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
 
-const { Client, Intents, Guild, TextChannel } = require('discord.js');
-const { GroupNotificationTypes } = require('whatsapp-web.js');
+const { Client, Intents, Guild, TextChannel, Integration } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
-const groups = [ {name: 'Bumble\'s Humble Hive', id: '692768770581856366', counting: '737207984601694299' } ]; //string -> id = Snowflake
-const commands = [ {name: 'bcounter', description: 'Bumble 0000000!'} ];
-let countings = { '737207984601694299': { current: 0, last: '' } };
+//PT-BumbleTrixx: 737207984601694299
+const groups = [ {name: 'Bumble\'s Humble Hive', id: '692768770581856366', counting: '765674569243164682' } ]; //string -> id = Snowflake
+const commands = [
+    {
+        name: 'bumblebot',
+        description: 'Bumble\'s Bot Command!'
+    },
+    {
+        name: 'bcounter',
+        description: 'Bumble\'s Counter Command!',
+        options: [{
+            name: "current",
+            description: "Returns the current count for this server",
+            type: 1
+        },{
+            name: "next",
+            description: "Returns the next count for this server",
+            type: 1
+        },{
+            name: "set",
+            description: "Sets the servers counter to a specific value",
+            type: 1,
+            options: [
+                {
+                    name: "count",
+                    description: "The amount to set the counter to",
+                    required: true,
+                    type: 4
+                }
+            ]
+        }]
+    }
+];
+let countings = { '765674569243164682': { current: 0, last: '' } };
 
 const MESSAGE_INIT = 'Initializing bot..';
 let initMessages = [];
@@ -23,14 +54,14 @@ let initMessages = [];
         console.log(CommandManager);
 
         //REMOVE ALL (/) COMMANDS
-        await rest.get(CommandManager).then(data => {
+        /*await rest.get(CommandManager).then(data => {
             const promises = [];
             for (const command of data) {
                 const deleteUrl = `${CommandManager}/${command.id}`;
                 promises.push(rest.delete(deleteUrl));
             }
             return Promise.all(promises);
-        });
+        });*/
         
         //ADD ALL (/) COMMANDS
         await rest.put(
@@ -61,7 +92,7 @@ client.on('ready', () => {
 client.on('messageCreate', async message => {
     if(message.author.id == client.user.id){
         if(message.content == MESSAGE_INIT){
-            console.log('found the init message for guild '+message.guildId);
+            console.log('Found the init message for guild '+message.guildId);
 
             //INIT GUILD
             const lastMessages = await message.channel.messages.fetch({ limit: 10 });
@@ -90,7 +121,6 @@ client.on('messageCreate', async message => {
         }
     }
 
-
     const group = getGroupById(message.guildId);
 
     if(group != null && group.counting == message.channelId && message.author.id != client.user.id){
@@ -98,21 +128,13 @@ client.on('messageCreate', async message => {
         let counting = countings[group.counting];
 
         const args = message.content.split(' ');
-        console.log('args: '+args);
         let approve = false;
         if(args.length > 0){
-            if(counting.last != message.author.id || 1 == 1){
+            if(counting != '' && (counting.last != message.author.id || 1 == 1)){
                 if(!isNaN(args[0]) && (parseInt(args[0]) == (1+counting.current))){
                     approve = true;
-                }else{
-                    console.log('now: '+(parseInt(args[0]))+' vs expected: '+(1+counting.current));
-                    console.log('not a number or incorrect number (isNaN('+isNaN(args[0])+'), isCurrent('+((parseInt(args[0])) == (1+counting.current))+'))');
                 }
-            }else{
-                console.log('last user is same');
             }
-        }else{
-            console.log('0 args');
         }
 
         if(approve){
@@ -125,24 +147,53 @@ client.on('messageCreate', async message => {
             if(approveEmote){
                 message.react(approveEmote.id);
             }
-            console.log('"'+message.content+'" approved..');
         }else{
-            const denyEmote = message.guild.emojis.cache.find(e => e.name == 'no_entry');
-            if(denyEmote){
-                message.react(denyEmote.id);
+            if(message.deletable){
+                message.delete().then().catch(error => console.error('Error: ', error));
             }
-            message.delete();
-            console.log('"'+message.content+'" deleted..');
         }
     }
 });
 
 client.on('interactionCreate', async interaction => {
-    console.log('please');
     if (!interaction.isCommand()) return;
 
     if (interaction.commandName === 'bcounter') {
-        await interaction.reply('Lets kill this b****!');
+        if(interaction.options.getSubcommand() === 'set'){
+            if(countings[interaction.channelId]) return;
+            const countValue = interaction.options.getInteger('count');
+            const group = getGroupById(interaction.guildId);
+            if(countValue && group && group != null){
+                const counting = countings[group.counting];
+                if(counting){
+                    if(counting.current != countValue){
+                        counting.current = countValue;
+                        countings[group.counting] = counting;
+                        await interaction.reply('<:approve:930918425923039302> Counting has been set to: **'+countValue+'** (continue here <#'+group.counting+'>)');
+                    }else{
+                        await interaction.reply(':no_entry: You cannot change it to the same number!');
+                    }
+                }else{
+                    await interaction.reply(':no_entry: No counting channel was found for this server!');
+                }
+            }else{
+                await interaction.reply(':no_entry: No counting channel was found or values are missing!');
+            }
+        }else if(interaction.options.getSubcommand() === 'current'){
+            const group = getGroupById(interaction.guildId);
+            if(group && group != null){
+                await interaction.reply({ content:':1234: Current count number for this server is: **'+countings[group.counting].current+'**', ephemeral: true });
+            }else{
+                await interaction.reply({ content:':no_entry: No counting channel was found for this server!', ephemeral: true });
+            }
+        }else if(interaction.options.getSubcommand() === 'next'){
+            const group = getGroupById(interaction.guildId);
+            if(group && group != null){
+                await interaction.reply({ content:':new: Next number for this server is: **'+(parseInt(countings[group.counting].current)+1)+'**', ephemeral: true });
+            }else{
+                await interaction.reply({ content:':no_entry: No counting channel was found for this server!', ephemeral: true });
+            }
+        }
     }
 });
 
