@@ -85,7 +85,6 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async message => {
-    console.log('MESSAGE ', message);
     if(message.author.id == client.user.id){
         if(message.content == MESSAGE_INIT){
             console.log('Found the init message for guild '+message.guildId);
