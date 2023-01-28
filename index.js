@@ -1,12 +1,10 @@
 require('dotenv').config();
 
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { REST, RequestManager } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
+// const { Client, Intents, Guild, TextChannel, Integration } = require('discord.js');
 
-const { Client, Intents, Guild, TextChannel, Integration } = require('discord.js');
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+const { REST, Routes, Client, GatewayIntentBits, SlashCommandBuilder } = require('discord.js');
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 //PT-BumbleTrixx: 737207984601694299
 const groups = [ {name: 'Bumble\'s Humble Hive', id: '692768770581856366', counting: '765674569243164682' } ]; //string -> id = Snowflake
@@ -87,6 +85,7 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async message => {
+    console.log('MESSAGE ', message);
     if(message.author.id == client.user.id){
         if(message.content == MESSAGE_INIT){
             console.log('Found the init message for guild '+message.guildId);
